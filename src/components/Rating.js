@@ -1,18 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import '../index.css'; // Ensure this file exists, or remove
+import '../index.css';
 
 const Rating = () => {
   const [role, setRole] = useState(null);
   const [items, setItems] = useState([]);
   const [ratings, setRatings] = useState([]);
   const [message, setMessage] = useState('');
-  const [formData, setFormData] = useState({}); // per-item rating/comment
-
+  const [formData, setFormData] = useState({});
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-  // -----------------------
-  // Fetch students or lectures
   const fetchItems = useCallback(async (role, token) => {
     try {
       const endpoint = role === 'lecturer' ? 'students-to-rate' : 'lectures-to-rate';
@@ -21,7 +18,6 @@ const Rating = () => {
       });
       setItems(res.data || []);
 
-      // Initialize per-item form data
       const initialForm = {};
       res.data.forEach(item => {
         initialForm[item.id] = { rating: '', comment: '' };
@@ -29,12 +25,10 @@ const Rating = () => {
       setFormData(initialForm);
     } catch (err) {
       console.error('Fetch items error:', err);
-      setMessage('Failed to load items. Ensure backend is running and token is valid.');
+      setMessage('Failed to load items.');
     }
   }, [API_URL]);
 
-  // -----------------------
-  // Fetch all ratings
   const fetchRatings = useCallback(async (token) => {
     try {
       const res = await axios.get(`${API_URL}/rating`, {
@@ -47,12 +41,9 @@ const Rating = () => {
     }
   }, [API_URL]);
 
-  // -----------------------
-  // On mount: decode token, get role, fetch items and ratings
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
-
     try {
       const decoded = JSON.parse(atob(token.split('.')[1]));
       setRole(decoded.role);
@@ -63,8 +54,6 @@ const Rating = () => {
     }
   }, [fetchItems, fetchRatings]);
 
-  // -----------------------
-  // Handle input change
   const handleChange = (id, e) => {
     setFormData({
       ...formData,
@@ -72,8 +61,6 @@ const Rating = () => {
     });
   };
 
-  // -----------------------
-  // Submit rating
   const handleSubmit = async (item) => {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -84,7 +71,6 @@ const Rating = () => {
         rating: formData[item.id].rating,
         comment: formData[item.id].comment || null,
       };
-
       const res = await axios.post(`${API_URL}/rating`, payload, {
         headers: { 'x-auth-token': token },
       });
@@ -109,7 +95,9 @@ const Rating = () => {
           <div key={item.id} className="rating-card">
             <p>
               <strong>{role === 'lecturer' ? 'Student:' : 'Lecture:'}</strong>{' '}
-              {role === 'lecturer' ? item.username : item.lecturer_name || `Lecture ${item.id}`}
+              {role === 'lecturer'
+                ? item.username
+                : item.course_name || `Lecture ${item.id}`}
             </p>
             <input
               type="number"
@@ -144,7 +132,8 @@ const Rating = () => {
               </>
             ) : (
               <>
-                <p><strong>Lecture:</strong> {r.lecture_id} - {r.lecturer_name}</p>
+                <p><strong>Lecture:</strong> {r.course_name}</p>
+                <p><strong>Lecturer:</strong> {r.lecturer_name}</p>
                 <p><strong>Rating:</strong> {r.rating}</p>
                 <p><strong>Comment:</strong> {r.comment || '-'}</p>
               </>
@@ -157,6 +146,9 @@ const Rating = () => {
 };
 
 export default Rating;
+
+
+
 
 
 

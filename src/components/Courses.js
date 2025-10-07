@@ -42,6 +42,19 @@ const Courses = ({ role }) => {
     fetchCourses(e.target.value);
   };
 
+  // -------- Delete course --------
+  const deleteCourse = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this course?')) return;
+    try {
+      await axios.delete(`${process.env.REACT_APP_API_URL}/courses/${id}`, {
+        headers: { 'x-auth-token': localStorage.getItem('token') }
+      });
+      fetchCourses(search);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <Card className="p-4">
       {role === 'pl' && (
@@ -61,15 +74,18 @@ const Courses = ({ role }) => {
           <Button variant="primary" type="submit">Add Course</Button>
         </Form>
       )}
+
       <InputGroup className="mb-3 search-input">
         <FormControl placeholder="Search courses..." value={search} onChange={handleSearch} />
       </InputGroup>
+
       <Table striped bordered hover>
         <thead>
           <tr>
             <th>ID</th>
             <th>Name</th>
             <th>Code</th>
+            {role === 'pl' && <th>Action</th>}
           </tr>
         </thead>
         <tbody>
@@ -78,6 +94,11 @@ const Courses = ({ role }) => {
               <td>{course.id}</td>
               <td>{course.name}</td>
               <td>{course.code}</td>
+              {role === 'pl' && (
+                <td>
+                  <Button variant="danger" size="sm" onClick={() => deleteCourse(course.id)}>Delete</Button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
