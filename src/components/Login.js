@@ -1,4 +1,4 @@
-this a code i have in frontend repositoryimport React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Form, Button, Card } from 'react-bootstrap';
@@ -77,7 +77,7 @@ const Login = ({ setRole }) => {
   );
 };
 
-export default Login;and um saying um able to login as student and lecturer but unable to as pl and student
+export default Login;
 
 
 
