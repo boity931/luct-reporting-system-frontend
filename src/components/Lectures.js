@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Form, Button, Table, Card, InputGroup, FormControl } from 'react-bootstrap';
 
@@ -10,37 +10,38 @@ const Lectures = ({ role }) => {
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-  useEffect(() => {
-    fetchLectures();
-    fetchReports();
-    // eslint-disable-next-line
-  }, []);
-
-  const fetchLectures = async () => {
+  // Fetch lectures
+  const fetchLectures = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/lectures`, {
         headers: { 'x-auth-token': localStorage.getItem('token') }
       });
       setLectures(res.data);
     } catch (err) {
-      console.error(err);
+      console.error('Fetch lectures error:', err);
     }
-  };
+  }, [API_URL]);
 
-  const fetchReports = async () => {
+  // Fetch available reports
+  const fetchReports = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/lectures/available-reports`, {
         headers: { 'x-auth-token': localStorage.getItem('token') }
       });
       setReports(res.data);
     } catch (err) {
-      console.error(err);
+      console.error('Fetch reports error:', err);
     }
-  };
+  }, [API_URL]);
+
+  useEffect(() => {
+    fetchLectures();
+    fetchReports();
+  }, [fetchLectures, fetchReports]);
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedReport) return alert('Error assigning lecture. Make sure you have selected a lecture from reports.');
+    if (!selectedReport) return alert('Error assigning lecture. Select a lecture from reports.');
 
     try {
       await axios.post(`${API_URL}/lectures`, { report_id: selectedReport }, {
@@ -61,7 +62,7 @@ const Lectures = ({ role }) => {
       });
       fetchLectures();
     } catch (err) {
-      console.error(err);
+      console.error('Delete lecture error:', err);
     }
   };
 
@@ -75,7 +76,11 @@ const Lectures = ({ role }) => {
         <Form onSubmit={onSubmit} className="mb-4">
           <Form.Group controlId="reportSelect" className="mb-3">
             <Form.Label>Select Lecture (from Reports)</Form.Label>
-            <Form.Select value={selectedReport} onChange={e => setSelectedReport(e.target.value)} required>
+            <Form.Select
+              value={selectedReport}
+              onChange={e => setSelectedReport(e.target.value)}
+              required
+            >
               <option value="">Select a lecture</option>
               {reports.map(r => (
                 <option key={r.id} value={r.id}>
@@ -84,13 +89,16 @@ const Lectures = ({ role }) => {
               ))}
             </Form.Select>
           </Form.Group>
-
           <Button variant="primary" type="submit">Assign Lecture</Button>
         </Form>
       )}
 
       <InputGroup className="mb-3">
-        <FormControl placeholder="Search lectures..." value={search} onChange={e => setSearch(e.target.value)} />
+        <FormControl
+          placeholder="Search lectures..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
       </InputGroup>
 
       <Table striped bordered hover>
@@ -126,6 +134,9 @@ const Lectures = ({ role }) => {
 };
 
 export default Lectures;
+
+
+
 
 
 
