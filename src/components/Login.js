@@ -2,34 +2,31 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Form, Button, Card } from 'react-bootstrap';
-import { jwtDecode } from 'jwt-decode'; // correct named import
+import { jwtDecode } from 'jwt-decode';
 
 const Login = ({ setRole }) => {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const navigate = useNavigate();
 
-  const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  // ✅ Use environment variable for API base URL
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+  const onChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const onSubmit = async (e) => {
     e.preventDefault();
     try {
-      // ✅ Fixed API endpoint (includes /api prefix)
-      const res = await axios.post(
-        `https://luct-backend-2.onrender.com/api/auth/login`,
-        formData
-      );
+      // ✅ Automatically use the correct backend (Render or local)
+      const res = await axios.post(`${API_URL}/api/auth/login`, formData);
 
-      // ✅ Save token
       const token = res.data.token;
       localStorage.setItem('token', token);
-      console.log('Token saved:', token);
 
-      // ✅ Decode token to get user role
       const decoded = jwtDecode(token);
       setRole(decoded.role);
       console.log('Decoded role:', decoded.role);
 
-      // ✅ Redirect after login
       navigate('/reports');
     } catch (err) {
       console.error('Login error:', err.response ? err.response.data : err);
