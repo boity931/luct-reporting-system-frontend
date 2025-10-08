@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Form, Button, Table, Card, InputGroup, FormControl } from 'react-bootstrap';
+import { Form, Button, Table, Card, InputGroup, FormControl, Alert } from 'react-bootstrap';
+
+const API_URL = "https://luct-backend-2.onrender.com"; // Deployed backend URL
 
 const Courses = ({ role }) => {
   const [courses, setCourses] = useState([]);
   const [formData, setFormData] = useState({ name: '', code: '', lecturer_id: '' });
   const [search, setSearch] = useState('');
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   useEffect(() => {
     fetchCourses();
@@ -13,12 +17,14 @@ const Courses = ({ role }) => {
 
   const fetchCourses = async (q = '') => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/courses${q ? `?q=${q}` : ''}`, {
+      const res = await axios.get(`${API_URL}/courses${q ? `?q=${q}` : ''}`, {
         headers: { 'x-auth-token': localStorage.getItem('token') }
       });
-      setCourses(res.data);
+      setCourses(res.data || []);
+      setError(null);
     } catch (err) {
       console.error(err);
+      setError(err.response?.data?.message || 'Error fetching courses');
     }
   };
 
@@ -26,37 +32,57 @@ const Courses = ({ role }) => {
 
   const onSubmit = async e => {
     e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) return setError('No authentication token.');
+
+    if (!formData.name || !formData.code || !formData.lecturer_id) {
+      return setError('All fields are required.');
+    }
+
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/courses`, formData, {
-        headers: { 'x-auth-token': localStorage.getItem('token') }
-      });
+      await axios.post(`${API_URL}/courses`, formData, { headers: { 'x-auth-token': token } });
       setFormData({ name: '', code: '', lecturer_id: '' });
+      setSuccess('Course added successfully');
+      setError(null);
       fetchCourses();
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error(err);
+      setError(err.response?.data?.message || 'Error adding course');
+      setSuccess(null);
     }
   };
 
   const handleSearch = e => {
-    setSearch(e.target.value);
-    fetchCourses(e.target.value);
+    const value = e.target.value;
+    setSearch(value);
+    fetchCourses(value);
   };
 
-  // -------- Delete course --------
   const deleteCourse = async (id) => {
     if (!window.confirm('Are you sure you want to delete this course?')) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) return setError('No authentication token.');
+
     try {
-      await axios.delete(`${process.env.REACT_APP_API_URL}/courses/${id}`, {
-        headers: { 'x-auth-token': localStorage.getItem('token') }
-      });
+      await axios.delete(`${API_URL}/courses/${id}`, { headers: { 'x-auth-token': token } });
+      setSuccess('Course deleted successfully');
+      setError(null);
       fetchCourses(search);
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error(err);
+      setError(err.response?.data?.message || 'Error deleting course');
+      setSuccess(null);
     }
   };
 
   return (
     <Card className="p-4">
+      {error && <Alert variant="danger">{error}</Alert>}
+      {success && <Alert variant="success">{success}</Alert>}
+
       {role === 'pl' && (
         <Form onSubmit={onSubmit} className="mb-4">
           <Form.Group controlId="name" className="mb-3">
@@ -89,7 +115,7 @@ const Courses = ({ role }) => {
           </tr>
         </thead>
         <tbody>
-          {courses.map(course => (
+          {courses.length > 0 ? courses.map(course => (
             <tr key={course.id}>
               <td>{course.id}</td>
               <td>{course.name}</td>
@@ -100,7 +126,11 @@ const Courses = ({ role }) => {
                 </td>
               )}
             </tr>
-          ))}
+          )) : (
+            <tr>
+              <td colSpan={role === 'pl' ? 4 : 3} className="text-center">No courses found.</td>
+            </tr>
+          )}
         </tbody>
       </Table>
     </Card>
@@ -108,3 +138,4 @@ const Courses = ({ role }) => {
 };
 
 export default Courses;
+

@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Table, Card, InputGroup, FormControl } from 'react-bootstrap';
+import { Table, Card, InputGroup, FormControl, Alert } from 'react-bootstrap';
+
+const API_URL = process.env.REACT_APP_API_URL || 'https://luct-backend-2.onrender.com/api';
 
 const Monitoring = ({ role }) => {
   const [data, setData] = useState([]);
   const [search, setSearch] = useState('');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchMonitoring();
@@ -12,25 +15,38 @@ const Monitoring = ({ role }) => {
 
   const fetchMonitoring = async (q = '') => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/monitoring${q ? `?q=${q}` : ''}`, {
+      const res = await axios.get(`${API_URL}/monitoring${q ? `?q=${q}` : ''}`, {
         headers: { 'x-auth-token': localStorage.getItem('token') }
       });
-      setData(res.data);
+      setData(res.data || []);
+      setError(null);
     } catch (err) {
-      console.error(err);
+      console.error('Fetch monitoring error:', err);
+      setError(err.response?.data?.message || 'Error fetching monitoring data');
+      setData([]);
     }
   };
 
-  const handleSearch = e => {
-    setSearch(e.target.value);
-    fetchMonitoring(e.target.value);
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearch(value);
+    fetchMonitoring(value);
   };
 
   return (
     <Card className="p-4">
-      <InputGroup className="mb-3 search-input">
-        <FormControl placeholder="Search monitoring..." value={search} onChange={handleSearch} />
+      <h2>Monitoring</h2>
+
+      {error && <Alert variant="danger">{error}</Alert>}
+
+      <InputGroup className="mb-3">
+        <FormControl
+          placeholder="Search monitoring..."
+          value={search}
+          onChange={handleSearch}
+        />
       </InputGroup>
+
       <Table striped bordered hover>
         <thead>
           <tr>
@@ -40,13 +56,21 @@ const Monitoring = ({ role }) => {
           </tr>
         </thead>
         <tbody>
-          {data.map(item => (
-            <tr key={item.id}>
-              <td>{item.id}</td>
-              <td>{item.course_name}</td>
-              <td>{item.week_of_reporting}</td>
+          {data.length > 0 ? (
+            data.map((item) => (
+              <tr key={item.id}>
+                <td>{item.id}</td>
+                <td>{item.course_name}</td>
+                <td>{item.week_of_reporting}</td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={3} className="text-center">
+                No monitoring data found.
+              </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </Table>
     </Card>
@@ -54,3 +78,4 @@ const Monitoring = ({ role }) => {
 };
 
 export default Monitoring;
+

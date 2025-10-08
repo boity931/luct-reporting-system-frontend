@@ -1,38 +1,42 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Form, Button, Table, Card, InputGroup, FormControl } from 'react-bootstrap';
+import { Form, Button, Table, Card, InputGroup, FormControl, Alert } from 'react-bootstrap';
+
+const API_URL = "https://luct-backend-2.onrender.com"; // Deployed backend URL
 
 const Lectures = ({ role }) => {
   const [lectures, setLectures] = useState([]);
   const [reports, setReports] = useState([]);
   const [selectedReport, setSelectedReport] = useState('');
   const [search, setSearch] = useState('');
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
-  // Fetch lectures
   const fetchLectures = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/lectures`, {
         headers: { 'x-auth-token': localStorage.getItem('token') }
       });
-      setLectures(res.data);
+      setLectures(res.data || []);
+      setError(null);
     } catch (err) {
       console.error('Fetch lectures error:', err);
+      setError(err.response?.data?.message || 'Error fetching lectures');
     }
-  }, [API_URL]);
+  }, []);
 
-  // Fetch available reports
   const fetchReports = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/lectures/available-reports`, {
         headers: { 'x-auth-token': localStorage.getItem('token') }
       });
-      setReports(res.data);
+      setReports(res.data || []);
+      setError(null);
     } catch (err) {
       console.error('Fetch reports error:', err);
+      setError(err.response?.data?.message || 'Error fetching reports');
     }
-  }, [API_URL]);
+  }, []);
 
   useEffect(() => {
     fetchLectures();
@@ -41,28 +45,43 @@ const Lectures = ({ role }) => {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedReport) return alert('Error assigning lecture. Select a lecture from reports.');
+    const token = localStorage.getItem('token');
+    if (!token) return setError('No authentication token.');
+    if (!selectedReport) return setError('Select a lecture from reports.');
 
     try {
       await axios.post(`${API_URL}/lectures`, { report_id: selectedReport }, {
-        headers: { 'x-auth-token': localStorage.getItem('token') }
+        headers: { 'x-auth-token': token }
       });
       setSelectedReport('');
+      setSuccess('Lecture assigned successfully');
+      setError(null);
       fetchLectures();
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error('Add lecture error:', err);
+      setError(err.response?.data?.message || 'Error assigning lecture');
+      setSuccess(null);
     }
   };
 
   const deleteLecture = async (id) => {
     if (!window.confirm('Are you sure you want to delete this lecture?')) return;
+    const token = localStorage.getItem('token');
+    if (!token) return setError('No authentication token.');
+
     try {
       await axios.delete(`${API_URL}/lectures/${id}`, {
-        headers: { 'x-auth-token': localStorage.getItem('token') }
+        headers: { 'x-auth-token': token }
       });
+      setSuccess('Lecture deleted successfully');
+      setError(null);
       fetchLectures();
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error('Delete lecture error:', err);
+      setError(err.response?.data?.message || 'Error deleting lecture');
+      setSuccess(null);
     }
   };
 
@@ -72,6 +91,9 @@ const Lectures = ({ role }) => {
 
   return (
     <Card className="p-4">
+      {error && <Alert variant="danger">{error}</Alert>}
+      {success && <Alert variant="success">{success}</Alert>}
+
       {role === 'pl' && (
         <Form onSubmit={onSubmit} className="mb-4">
           <Form.Group controlId="reportSelect" className="mb-3">
@@ -113,7 +135,7 @@ const Lectures = ({ role }) => {
           </tr>
         </thead>
         <tbody>
-          {filteredLectures.map(l => (
+          {filteredLectures.length > 0 ? filteredLectures.map(l => (
             <tr key={l.id}>
               <td>{l.id}</td>
               <td>{l.course_name}</td>
@@ -126,7 +148,11 @@ const Lectures = ({ role }) => {
                 </td>
               )}
             </tr>
-          ))}
+          )) : (
+            <tr>
+              <td colSpan={role === 'pl' ? 6 : 5} className="text-center">No lectures found.</td>
+            </tr>
+          )}
         </tbody>
       </Table>
     </Card>
@@ -134,6 +160,7 @@ const Lectures = ({ role }) => {
 };
 
 export default Lectures;
+
 
 
 

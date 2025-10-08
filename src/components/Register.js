@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Form, Button, Card, Alert } from 'react-bootstrap';
 
+const API_URL = process.env.REACT_APP_API_URL || 'https://luct-backend-2.onrender.com';
+
 const Register = () => {
   const [formData, setFormData] = useState({ username: '', password: '', role: 'student' });
   const [error, setError] = useState(null);
@@ -13,20 +15,26 @@ const Register = () => {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    console.log('Register clicked', formData);
+
+    if (!formData.username || !formData.password) {
+      setError('Username and password are required.');
+      return;
+    }
 
     try {
       setError(null);
       setSuccess(null);
-      const apiUrl = `${process.env.REACT_APP_API_URL}/auth/register`;
-      const res = await axios.post(apiUrl, formData);
-      console.log('Server response:', res.data);
 
+      const res = await axios.post(`${API_URL}/auth/register`, formData);
+
+      console.log('Server response:', res.data);
       setSuccess('Registration successful! Redirecting to login...');
+      
       setTimeout(() => navigate('/login'), 1500);
     } catch (err) {
       console.error('Registration error:', err.response?.data || err);
       setError('Registration failed. ' + (err.response?.data?.msg || 'Check fields or server.'));
+      setSuccess(null);
     }
   };
 
@@ -39,12 +47,24 @@ const Register = () => {
       <Form onSubmit={onSubmit}>
         <Form.Group controlId="username" className="mb-3">
           <Form.Label>Username</Form.Label>
-          <Form.Control type="text" name="username" value={formData.username} onChange={onChange} required />
+          <Form.Control
+            type="text"
+            name="username"
+            value={formData.username}
+            onChange={onChange}
+            required
+          />
         </Form.Group>
 
         <Form.Group controlId="password" className="mb-3">
           <Form.Label>Password</Form.Label>
-          <Form.Control type="password" name="password" value={formData.password} onChange={onChange} required />
+          <Form.Control
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={onChange}
+            required
+          />
         </Form.Group>
 
         <Form.Group controlId="role" className="mb-3">
@@ -62,4 +82,6 @@ const Register = () => {
 };
 
 export default Register;
+
+
 

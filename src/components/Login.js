@@ -1,42 +1,43 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Form, Button, Card } from 'react-bootstrap';
+import { Form, Button, Card, Alert } from 'react-bootstrap';
 import { jwtDecode } from 'jwt-decode'; // Named import
+
+const API_URL = process.env.REACT_APP_API_URL || "https://luct-backend-2.onrender.com";
 
 const Login = ({ setRole }) => {
   const [formData, setFormData] = useState({ username: '', password: '' });
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
+
     try {
-      // ✅ Corrected to use base URL directly with /auth/login
-      const res = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, formData);
-
-      // Save token in localStorage and log it
+      const res = await axios.post(`${API_URL}/auth/login`, formData);
       const token = res.data.token;
+
       localStorage.setItem('token', token);
-      console.log('Token saved:', token);
 
-      // Decode token to get role
-      const decoded = jwtDecode(token);
+      const decoded = jwtDecode(token); // Use named import
       setRole(decoded.role);
-      console.log('Decoded role:', decoded.role);
 
-      // Navigate to reports page
       navigate('/reports');
     } catch (err) {
       console.error('Login error:', err.response ? err.response.data : err);
-      alert('Login failed. ' + (err.response?.data?.msg || 'Check username/password or server.'));
+      setError(err.response?.data?.msg || 'Login failed. Check username/password or server.');
     }
   };
 
   return (
     <Card className="p-4">
       <h2>Login</h2>
+      {error && <Alert variant="danger">{error}</Alert>}
+
       <Form onSubmit={onSubmit}>
         <Form.Group controlId="username" className="mb-3">
           <Form.Label>Username</Form.Label>
@@ -48,8 +49,9 @@ const Login = ({ setRole }) => {
             required
           />
         </Form.Group>
+
         <Form.Group controlId="password" className="mb-3">
-          <Form.Label>Password</Form.Label> {/* Corrected closing tag */}
+          <Form.Label>Password</Form.Label>
           <Form.Control
             type="password"
             name="password"
@@ -58,15 +60,16 @@ const Login = ({ setRole }) => {
             required
           />
         </Form.Group>
-        <Button variant="primary" type="submit">
-          Login
-        </Button>
+
+        <Button variant="primary" type="submit">Login</Button>
       </Form>
     </Card>
   );
 };
 
 export default Login;
+
+
 
 
 

@@ -2,13 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import '../index.css';
 
+const API_URL = process.env.REACT_APP_API_URL || 'https://luct-backend-2.onrender.com/api';
+
 const Rating = () => {
   const [role, setRole] = useState(null);
   const [items, setItems] = useState([]);
   const [ratings, setRatings] = useState([]);
   const [message, setMessage] = useState('');
   const [formData, setFormData] = useState({});
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
   // Fetch items to rate
   const fetchItems = useCallback(async (role, token) => {
@@ -34,12 +35,10 @@ const Rating = () => {
       setFormData(initialForm);
     } catch (err) {
       console.error('Fetch items error:', err);
-      setMessage(
-        err.response?.data?.msg || 'Failed to load items.'
-      );
+      setMessage(err.response?.data?.msg || 'Failed to load items.');
       setItems([]);
     }
-  }, [API_URL]);
+  }, []);
 
   // Fetch all ratings
   const fetchRatings = useCallback(async (token) => {
@@ -50,12 +49,10 @@ const Rating = () => {
       setRatings(res.data.ratings || []);
     } catch (err) {
       console.error('Fetch ratings error:', err);
-      setMessage(
-        err.response?.data?.msg || 'Failed to load ratings.'
-      );
+      setMessage(err.response?.data?.msg || 'Failed to load ratings.');
       setRatings([]);
     }
-  }, [API_URL]);
+  }, []);
 
   // Load role and data on mount
   useEffect(() => {
@@ -66,7 +63,6 @@ const Rating = () => {
       const decoded = JSON.parse(atob(token.split('.')[1]));
       setRole(decoded.role);
 
-      // Only fetch if role is student or lecturer
       if (decoded.role === 'student' || decoded.role === 'lecturer') {
         fetchItems(decoded.role, token);
         fetchRatings(token);
@@ -105,9 +101,7 @@ const Rating = () => {
       fetchRatings(token);
     } catch (err) {
       console.error('Rating submit error:', err);
-      setMessage(
-        err.response?.data?.msg || 'Error submitting rating'
-      );
+      setMessage(err.response?.data?.msg || 'Error submitting rating');
     }
   };
 
@@ -181,6 +175,7 @@ const Rating = () => {
 };
 
 export default Rating;
+
 
 
 

@@ -3,6 +3,8 @@ import { Form, Button, Card, Alert } from 'react-bootstrap';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 
+const API_URL = process.env.REACT_APP_API_URL || 'https://luct-backend-2.onrender.com/api';
+
 const Reports = ({ role }) => {
   const [formData, setFormData] = useState({
     faculty_name: '',
@@ -31,7 +33,6 @@ const Reports = ({ role }) => {
   const [editFormData, setEditFormData] = useState({});
   const [defaultTotalRegistered, setDefaultTotalRegistered] = useState('');
 
-  // Reset state when role changes
   useEffect(() => {
     setFormData({
       faculty_name: '',
@@ -76,9 +77,9 @@ const Reports = ({ role }) => {
 
     let url;
     if (role === 'pl') {
-      url = `${process.env.REACT_APP_API_URL.replace(/\/$/, '')}/reports/prl-feedback`;
+      url = `${API_URL.replace(/\/$/, '')}/reports/prl-feedback`;
     } else {
-      url = `${process.env.REACT_APP_API_URL.replace(/\/$/, '')}/reports${q ? `?q=${q}` : ''}`;
+      url = `${API_URL.replace(/\/$/, '')}/reports${q ? `?q=${q}` : ''}`;
     }
 
     try {
@@ -99,10 +100,9 @@ const Reports = ({ role }) => {
     if (!token) return;
 
     try {
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL.replace(/\/$/, '')}/classes`,
-        { headers: { 'x-auth-token': token } }
-      );
+      const response = await axios.get(`${API_URL.replace(/\/$/, '')}/classes`, {
+        headers: { 'x-auth-token': token }
+      });
       setClasses(response.data || []);
     } catch (err) {
       console.error('Fetch classes error:', err);
@@ -119,7 +119,7 @@ const Reports = ({ role }) => {
     if (!classId && formData.class_name) {
       try {
         const response = await axios.post(
-          `${process.env.REACT_APP_API_URL.replace(/\/$/, '')}/classes`,
+          `${API_URL.replace(/\/$/, '')}/classes`,
           { class_name: formData.class_name, venue: formData.venue || '' },
           { headers: { 'x-auth-token': token } }
         );
@@ -152,11 +152,7 @@ const Reports = ({ role }) => {
         lecturer_id: formData.lecturer_id || null
       };
 
-      await axios.post(
-        `${process.env.REACT_APP_API_URL.replace(/\/$/, '')}/reports`,
-        submitData,
-        { headers: { 'x-auth-token': token } }
-      );
+      await axios.post(`${API_URL.replace(/\/$/, '')}/reports`, submitData, { headers: { 'x-auth-token': token } });
 
       alert('Report submitted successfully');
       setFormData({ ...formData, total_registered: defaultTotalRegistered || '' });
@@ -170,33 +166,16 @@ const Reports = ({ role }) => {
   const handleFeedbackSubmit = async (e, reportId) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    if (!token) {
-      alert('You must be logged in to submit feedback.');
-      return;
-    }
+    if (!token) return alert('You must be logged in to submit feedback.');
 
     const feedback = feedbacks[reportId]?.trim();
-    if (!feedback) {
-      alert('Please enter feedback before submitting.');
-      return;
-    }
+    if (!feedback) return alert('Please enter feedback before submitting.');
 
-    const baseURL = process.env.REACT_APP_API_URL?.replace(/\/$/, '');
-    if (!baseURL) {
-      console.error('REACT_APP_API_URL is not defined in your .env file');
-      return;
-    }
-
-    const url = `${baseURL}/reports/feedback/${reportId}`;
+    const url = `${API_URL.replace(/\/$/, '')}/reports/feedback/${reportId}`;
     console.log('Submitting feedback to:', url);
 
     try {
-      const response = await axios.post(
-        url,
-        { feedback },
-        { headers: { 'x-auth-token': token } }
-      );
-
+      const response = await axios.post(url, { feedback }, { headers: { 'x-auth-token': token } });
       alert(response.data.message || 'Feedback submitted successfully');
       setFeedbacks(prev => ({ ...prev, [reportId]: '' }));
       fetchReports();
@@ -219,10 +198,7 @@ const Reports = ({ role }) => {
     if (!token) return;
 
     try {
-      await axios.delete(
-        `${process.env.REACT_APP_API_URL.replace(/\/$/, '')}/reports/${id}`,
-        { headers: { 'x-auth-token': token } }
-      );
+      await axios.delete(`${API_URL.replace(/\/$/, '')}/reports/${id}`, { headers: { 'x-auth-token': token } });
       fetchReports();
     } catch (err) {
       console.error('Delete error:', err);
@@ -269,11 +245,7 @@ const Reports = ({ role }) => {
     let classId = editFormData.class_id;
     if (editFormData.class_name && !classes.some((cls) => cls.class_name.toLowerCase() === editFormData.class_name.toLowerCase())) {
       try {
-        const response = await axios.post(
-          `${process.env.REACT_APP_API_URL.replace(/\/$/, '')}/classes`,
-          { class_name: editFormData.class_name, venue: editFormData.venue || '' },
-          { headers: { 'x-auth-token': token } }
-        );
+        const response = await axios.post(`${API_URL.replace(/\/$/, '')}/classes`, { class_name: editFormData.class_name, venue: editFormData.venue || '' }, { headers: { 'x-auth-token': token } });
         classId = response.data.class_id;
       } catch (err) {
         if (role !== 'pl') setError('Error creating new class. Please try again or use an existing class name.');
@@ -285,11 +257,7 @@ const Reports = ({ role }) => {
     }
 
     try {
-      await axios.put(
-        `${process.env.REACT_APP_API_URL.replace(/\/$/, '')}/reports/${id}`,
-        { ...editFormData, class_id: parseInt(classId) },
-        { headers: { 'x-auth-token': token } }
-      );
+      await axios.put(`${API_URL.replace(/\/$/, '')}/reports/${id}`, { ...editFormData, class_id: parseInt(classId) }, { headers: { 'x-auth-token': token } });
       setEditReportId(null);
       fetchReports();
     } catch (err) {
@@ -444,6 +412,7 @@ const Reports = ({ role }) => {
 };
 
 export default Reports;
+
 
 
 

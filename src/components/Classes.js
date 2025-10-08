@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Table, Card, InputGroup, FormControl, Form, Button, Alert, Modal } from 'react-bootstrap';
 
+const API_URL = "https://luct-backend-2.onrender.com"; // Deployed backend URL
+
 const Classes = ({ role, onReportUpdate }) => {
   const [classes, setClasses] = useState([]);
   const [search, setSearch] = useState('');
@@ -18,14 +20,9 @@ const Classes = ({ role, onReportUpdate }) => {
 
   const fetchClasses = async (q = '') => {
     try {
-      const res = await axios.get(
-        `${process.env.REACT_APP_API_URL}/classes${q ? `?q=${q}` : ''}`,
-        {
-          headers: {
-            'x-auth-token': localStorage.getItem('token'),
-          },
-        }
-      );
+      const res = await axios.get(`${API_URL}/classes${q ? `?q=${q}` : ''}`, {
+        headers: { 'x-auth-token': localStorage.getItem('token') },
+      });
       setClasses(res.data || []);
       setError(null);
       setSuccess(null);
@@ -45,10 +42,7 @@ const Classes = ({ role, onReportUpdate }) => {
 
   const startEdit = (cls) => {
     setEditingClassId(cls.class_id);
-    setEditFormData({
-      class_name: cls.class_name,
-      venue: cls.venue,
-    });
+    setEditFormData({ class_name: cls.class_name, venue: cls.venue });
     setError(null);
     setSuccess(null);
   };
@@ -59,19 +53,12 @@ const Classes = ({ role, onReportUpdate }) => {
 
   const submitEdit = async (classId) => {
     const token = localStorage.getItem('token');
-    if (!token) {
-      setError('No authentication token.');
-      return;
-    }
+    if (!token) return setError('No authentication token.');
 
     try {
-      await axios.put(
-        `${process.env.REACT_APP_API_URL}/classes/${classId}`,
-        editFormData,
-        {
-          headers: { 'x-auth-token': token },
-        }
-      );
+      await axios.put(`${API_URL}/classes/${classId}`, editFormData, {
+        headers: { 'x-auth-token': token },
+      });
       setEditingClassId(null);
       setSuccess('Class updated successfully');
       setError(null);
@@ -85,19 +72,14 @@ const Classes = ({ role, onReportUpdate }) => {
 
   const handleDelete = async (classId) => {
     if (!window.confirm('Are you sure you want to delete this class?')) return;
+
     const token = localStorage.getItem('token');
-    if (!token) {
-      setError('No authentication token.');
-      return;
-    }
+    if (!token) return setError('No authentication token.');
 
     try {
-      await axios.delete(
-        `${process.env.REACT_APP_API_URL}/classes/${classId}`,
-        {
-          headers: { 'x-auth-token': token },
-        }
-      );
+      await axios.delete(`${API_URL}/classes/${classId}`, {
+        headers: { 'x-auth-token': token },
+      });
       setSuccess('Class deleted successfully');
       setError(null);
       fetchClasses(search);
@@ -114,24 +96,14 @@ const Classes = ({ role, onReportUpdate }) => {
 
   const submitNewClass = async () => {
     const token = localStorage.getItem('token');
-    if (!token) {
-      setError('No authentication token.');
-      return;
-    }
-
-    if (!newClassData.class_name || !newClassData.venue) {
-      setError('Both class name and venue are required.');
-      return;
-    }
+    if (!token) return setError('No authentication token.');
+    if (!newClassData.class_name || !newClassData.venue)
+      return setError('Both class name and venue are required.');
 
     try {
-      await axios.post(
-        `${process.env.REACT_APP_API_URL}/classes`,
-        newClassData,
-        {
-          headers: { 'x-auth-token': token },
-        }
-      );
+      await axios.post(`${API_URL}/classes`, newClassData, {
+        headers: { 'x-auth-token': token },
+      });
       setShowCreateModal(false);
       setNewClassData({ class_name: '', venue: '' });
       setSuccess('New class created successfully');
@@ -162,6 +134,7 @@ const Classes = ({ role, onReportUpdate }) => {
           </Button>
         )}
       </InputGroup>
+
       <Table striped bordered hover>
         <thead>
           <tr>
@@ -255,7 +228,6 @@ const Classes = ({ role, onReportUpdate }) => {
         </tbody>
       </Table>
 
-      {/* Create New Class Modal */}
       {role === 'lecturer' && (
         <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)}>
           <Modal.Header closeButton>
